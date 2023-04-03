@@ -2,7 +2,10 @@
 
 ## About
 
-Code for our work on convex hull reachability analysis under disturbances (T. Lew, R. Bonalli, M. Pavone, ["Exact characterization of the convex hulls of reachable sets", available at [https://arxiv.org/abs/2302.13970](https://arxiv.org/abs/2302.13970), 2023).
+Code for our work on convex hull reachability analysis under disturbances (T. Lew, R. Bonalli, M. Pavone, "Exact characterization of the convex hulls of reachable sets", available at [https://arxiv.org/abs/2303.17674](https://arxiv.org/abs/2303.17674), 2023).
+
+![continuous_time_reachability](/results/continuous_time_reachability.jpg)
+
 * For a simple example, run
 ``python example.py``
 * The spacecraft results can be reproduced by running

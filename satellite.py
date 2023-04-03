@@ -29,11 +29,11 @@ from src.viz import set_axes_equal, plot_3d_convex_hull
 
 np.random.seed(0)
 B_evaluate_bounds = True
-B_generate_main_results = False
-B_generate_mpc_results = False
-B_plot_main_results = False
-B_plot_mpc_results = False
-B_reachability_comparison = False
+B_generate_main_results = True
+B_generate_mpc_results = True
+B_plot_main_results = True
+B_plot_mpc_results = True
+B_reachability_comparison = True
 B_main_plot = False
 
 # -----------------------------------------
