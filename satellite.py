@@ -490,10 +490,9 @@ class Model:
         # us_mat - (S, n_u)
         # x0     - (n_x,)
         # w0s    - (M, 3)
-        Us = jnp.repeat(us_mat[jnp.newaxis, :, :], M, axis=0)
-        X0s = jnp.repeat(x0[jnp.newaxis, :], M, axis=0) # (M, n_x)
-        Omegas = vmap(self.extremal_omega_trajectory)(
-            Us, X0s, w0s)
+        Omegas = vmap(self.extremal_omega_trajectory,
+            in_axes=(None, None, 0))(
+            us_mat, x0, w0s)
         return Omegas
 
     def extremal_omega_trajectories_dw0s(self, 
@@ -544,10 +543,9 @@ class Model:
         # us_mat - (S, n_u)
         # x0     - (n_x,)
         # w0s    - (M, S, n_x)
-        X0s = jnp.repeat(x0[jnp.newaxis, :], M, axis=0) # (M, n_x)
-        Us = jnp.repeat(us_mat[jnp.newaxis, :, :], M, axis=0)
-        Us = vmap(self.extremal_closed_loop_control_trajectory)(
-            Us, X0s, w0s)
+        Us = vmap(self.extremal_closed_loop_control_trajectory,
+            in_axes=(None, None, 0))(
+            us_mat, x0, w0s)
         return Us
 
     def extremal_closed_loop_control_trajectories_dw0s(self, 
@@ -574,10 +572,9 @@ class Model:
         # us_mat - (S, n_u)
         # x0     - (n_x,)
         # w0     - (n_x,)
-        Us = jnp.repeat(us_mat[jnp.newaxis, :, :], M, axis=0)
-        X0s = jnp.repeat(x0[jnp.newaxis, :], M, axis=0) # (M, n_x)
-        Ws = vmap(self.extremal_disturbance_trajectory)(
-            Us, X0s, w0s)
+        Ws = vmap(self.extremal_disturbance_trajectory,
+            in_axes=(None, None, 0))(
+            us_mat, x0, w0s)
         return Ws
     # ---------------------------------
 
@@ -647,11 +644,9 @@ class Model:
 
     @partial(jit, static_argnums=(0,))
     def get_all_constraints_coeffs_all(self, us_mat, x0):
-        Us = jnp.repeat(us_mat[jnp.newaxis, :, :], M, axis=0)
-        X0s = jnp.repeat(x0[jnp.newaxis, :], M, axis=0) # (M, n_x)
-
-        constraints_vals = vmap(self.get_all_constraints_coeffs)(
-            Us, X0s, self.initial_disturbances)
+        constraints_vals = vmap(self.get_all_constraints_coeffs,
+            in_axes=(None, None, 0))(
+            us_mat, x0, self.initial_disturbances)
         (val_omg_du, val_omg_low, val_omg_up,
             val_con_du, val_con_low, val_con_up) = constraints_vals
 
@@ -785,6 +780,7 @@ class Model:
         Q_n = ((c + 1) / c) * Q_nom + (1 + c) * Q_disturbance_and_taylor
         return Q_n
 
+    @partial(jit, static_argnums=(0,))
     def get_ellipsoidal_uncertainty_tube_omega(self, 
         xs_nom, us_nom, H_bar):
         # xs_nom - (S+1, n_x)
@@ -829,7 +825,7 @@ model = Model(M)
 
 if B_generate_main_results:
     print("-------------------------------------------")
-    print("[spacecraft.py] >>> Generating main results")
+    print("[satellite.py] >>> Generating main results")
     model = Model(M)
     # Initial compilation (JAX)
     z_prev = model.initial_guess()
@@ -875,7 +871,7 @@ if B_generate_main_results:
 
 if B_plot_main_results:
     print("-----------------------------------------")
-    print("[spacecraft.py] >>> Plotting main results")
+    print("[satellite.py] >>> Plotting main results")
     with open('results/satellite_traj.npy', 
         'rb') as f:
         xs = np.load(f)
@@ -978,7 +974,7 @@ if B_plot_main_results:
 
 if B_reachability_comparison:
     print("--------------------------------------------")
-    print("[spacecraft.py] >>> Comparing reachable sets")
+    print("[satellite.py] >>> Comparing reachable sets")
     model = Model(M)
     with open('results/satellite_traj.npy',
         'rb') as f:
@@ -997,14 +993,14 @@ if B_reachability_comparison:
         xs, us, H_bar_one_step_taylor_method)
 
     # naive sampling-based method 
-    X0s = jnp.repeat(x0[jnp.newaxis, :], M, axis=0) # (M, n_x)
-    Us = jnp.repeat(us[jnp.newaxis, :, :], M, axis=0)
     Ws = w_ball_radius * sample_pts_unit_ball(3, M * S)
     Ws = np.reshape(Ws, (M, S, 3))
-    omegas_naive = vmap(model.state_closed_loop_trajectory)(
-        Us, X0s, Ws)[:, :, 4:8]
-    us_closed_loop_naive = vmap(model.closed_loop_control_trajectory)(
-        Us, omegas_naive)
+    omegas_naive = vmap(model.state_closed_loop_trajectory,
+        in_axes=(None, None, 0))(
+        us, x0, Ws)[:, :, 4:8]
+    us_closed_loop_naive = vmap(model.closed_loop_control_trajectory,
+        in_axes=(None, 0))(
+        us, omegas_naive)
 
     colors = ['r', 'g', 'b', 'm']
     fig = plt.figure(figsize=[5, 5])
@@ -1109,13 +1105,62 @@ if B_reachability_comparison:
     plt.legend(fontsize=18, loc='lower left')
     plt.ylim((-0.06, 0.025))
     plt.show()
+
+
+    print("Computation times:")
+    # Note: reporting the time to evaluate trajectories (as opposed to
+    # the time to compute the convex hulls) makes sense in this 
+    # application, since we enforce one constraint per sample in the
+    # MPC formulation. In many applications, it is not necessary to
+    # actually compute the true convex hull to use Algorithm 1. 
+    num_repeats = 100
+    # jit first
+    @jit
+    def get_min_max_omegas_naive(us, x0, Ws):
+        omegas_naive = vmap(model.state_closed_loop_trajectory,
+            in_axes=(None, None, 0))(
+            us, x0, Ws)[:, :, 4:8]
+        omegas_min = jnp.min(omegas_naive, axis=0)
+        omegas_max = jnp.max(omegas_naive, axis=0)
+        return omegas_naive, omegas_min, omegas_max
+    @jit
+    def get_min_max_omegas_extremal(us, x0, w0s):
+        omegas = model.extremal_omega_trajectories(
+            us, x0, w0s)
+        omegas_min = jnp.min(omegas, axis=0)
+        omegas_max = jnp.max(omegas, axis=0)
+        return omegas, omegas_min, omegas_max
+    omegas, omegas_min, omegas_max = get_min_max_omegas_naive(
+        us, x0, Ws)
+    omegas, omegas_min, omegas_max = get_min_max_omegas_extremal(
+        us, x0, model.initial_disturbances)
+    Qs_omega_taylor = model.get_ellipsoidal_uncertainty_tube_omega(
+        xs, us, H_bar_one_step_taylor_method)
+    # compute computation times
+    start_time = time()
+    for i in range(num_repeats):
+        os, os_min, os_max = get_min_max_omegas_naive(us, x0, Ws)
+    print("RandUP - elapsed:", 
+        1e3 * (time()-start_time)/num_repeats, "ms")
+    start_time = time()
+    for i in range(num_repeats):
+        os, os_min, os_max = get_min_max_omegas_extremal(
+            us, x0, model.initial_disturbances)
+    print("Algorithm 1 - elapsed:", 
+        1e3 * (time()-start_time)/num_repeats, "ms")
+    start_time = time()
+    for i in range(num_repeats):
+        Qs_omega_taylor = model.get_ellipsoidal_uncertainty_tube_omega(
+            xs, us, H_bar_one_step_taylor_method)
+    print("Ellipsoidal tube - elapsed:", 
+        1e3 * (time()-start_time)/num_repeats, "ms")
     print("--------------------------------------------")
 
 
 
 if B_main_plot:
     print("----------------------------------------")
-    print("[spacecraft.py] >>> Plotting main figure")
+    print("[satellite.py] >>> Plotting main figure")
     M = 40
     S = 17
     # S = 30
@@ -1265,7 +1310,7 @@ if B_main_plot:
 
 if B_generate_mpc_results:
     print("------------------------------------------")
-    print("[spacecraft.py] >>> Generating MPC results")
+    print("[satellite.py] >>> Generating MPC results")
     model = Model(M)
 
     comp_time_define_per_iter = np.zeros((num_MPC_runs, MPC_horizon))
@@ -1338,7 +1383,7 @@ if B_generate_mpc_results:
 
 if B_plot_mpc_results:
     print("----------------------------------------")
-    print("[spacecraft.py] >>> Plotting MPC results")
+    print("[satellite.py] >>> Plotting MPC results")
     with open('results/satellite_mpc_traj.npy', 
         'rb') as f:
         xs = np.load(f)
@@ -1433,7 +1478,7 @@ if B_plot_mpc_results:
 # -----------------------------------------
 if B_evaluate_bounds:
     print("---------------------------------------------")
-    print("[spacecraft.py] >>> Evaluating epsilon bounds")
+    print("[satellite.py] >>> Evaluating epsilon bounds")
     # compute delta
     M = 100 # number of points
     r = w_ball_radius
