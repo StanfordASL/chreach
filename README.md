@@ -1,15 +1,15 @@
-# Exact characterization of the convex hulls of reachable sets
+# Exact Characterization of the Convex Hulls of Reachable Sets
 
 ## About
 
-Code for our work on convex hull reachability analysis under disturbances (T. Lew, R. Bonalli, M. Pavone, "Exact characterization of the convex hulls of reachable sets", available at [https://arxiv.org/abs/2303.17674](https://arxiv.org/abs/2303.17674), 2023).
+Code for our work on convex hull reachability analysis under disturbances (T. Lew, R. Bonalli, M. Pavone, "Exact characterization of the convex hulls of reachable sets", IEEE Conference on Decision and Control (CDC), 2023), available at [https://arxiv.org/abs/2303.17674](https://arxiv.org/abs/2303.17674).
 
 ![continuous_time_reachability](/results/continuous_time_reachability.jpg)
 
 * For a simple example, run
 ``python example.py``
 * The spacecraft results can be reproduced by running
-``python spacecraft.py``
+``python satellite.py``
 * To reproduce the neural feedback loop analysis results, see https://github.com/StanfordASL/nn_robustness_analysis/tree/disturbances
 * For further experiments using RandUP, which inspired the design of Algorithm 1 (which is basically RandUP + leveraging the geometric structure of the problem see Theorem 1 of the paper), please refer to the following repositories:
     * For results with latest 2nd order bounds: https://github.com/StanfordASL/convex-hull-estimation
