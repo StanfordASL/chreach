@@ -1,0 +1,7 @@
+numpy
+osqp==0.6.2.post5
+jax
+jaxlib
+scipy
+matplotlib
+pytest
