@@ -2,7 +2,7 @@
 
 ## About
 
-Code for our work on convex hull reachability analysis (T. Lew, R. Bonalli, M. Pavone, "Convex Hulls of Reachable Sets", available at [TODO LINK HERE](https://arxiv.org/abs/2303.17674), 2024).
+Code for our work on convex hull reachability analysis (T. Lew, R. Bonalli, M. Pavone, "Convex Hulls of Reachable Sets", available at [https://arxiv.org/abs/2303.17674](https://arxiv.org/abs/2303.17674), 2024).
 
 ![continuous_time_reachability](/results/continuous_time_reachability.jpg)
 
