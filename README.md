@@ -2,7 +2,7 @@
 
 ## About
 
-Code for our work on convex hull reachability analysis under disturbances (T. Lew, R. Bonalli, M. Pavone, "Exact characterization of the convex hulls of reachable sets", IEEE Conference on Decision and Control (CDC), 2023), available at [https://arxiv.org/abs/2303.17674](https://arxiv.org/abs/2303.17674).
+Code for our work on convex hull reachability analysis under disturbances (T. Lew, R. Bonalli, M. Pavone, "Exact characterization of the convex hulls of reachable sets", IEEE Conference on Decision and Control (CDC), 2023), available at [https://arxiv.org/abs/2303.17674v2](https://arxiv.org/abs/2303.17674v2).
 
 ![continuous_time_reachability](/results/continuous_time_reachability.jpg)
 
